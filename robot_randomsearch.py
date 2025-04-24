@@ -70,7 +70,15 @@ class Robot_player(Robot):
                     if self.iteration % 1000 == 0:
                         return 0, 0, True  # reset
                     else:
-                        translation, rotation = self.compute_movement(sensors)
+                        translation = math.tanh(self.param[0] + 
+                            self.param[1] * sensors[sensor_front_left] + 
+                            self.param[2] * sensors[sensor_front] + 
+                            self.param[3] * sensors[sensor_front_right])
+        
+                        rotation = math.tanh(self.param[4] + 
+                            self.param[5] * sensors[sensor_front_left] + 
+                            self.param[6] * sensors[sensor_front] + 
+                            self.param[7] * sensors[sensor_front_right])
                         return translation, rotation, False
                 else:  # Au cas où aucune stratégie n'a été trouvée (ne devrait pas arriver)
                     self.param = [random.randint(-1, 1) for i in range(8)]
