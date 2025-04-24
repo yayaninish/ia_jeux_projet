@@ -58,14 +58,13 @@ class Robot_player(Robot):
             if self.current_eval >= self.evaluations_per_strategy:
                 # Calcule le score total de la stratégie
                 total_score = sum(self.strategy_scores)
-                
+                self.current_eval = 0
                 # Vérifie si c'est la meilleure stratégie
                 if total_score > self.best_score:
                     self.best_score = total_score
                     self.best_param = self.param.copy()
                     print(f"New best strategy {self.current_strategy} with score {self.best_score:.4f}")
-                    print("\tparameters =", self.best_param)
-                
+                    print("\tparameters =", self.best_param)  
                 # Passe à la stratégie suivante ou au mode best strategy
                 self.current_strategy += 1
                 if self.current_strategy >= self.evaluations:
