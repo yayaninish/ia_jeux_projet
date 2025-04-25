@@ -53,7 +53,6 @@ class Robot_player(Robot):
             # Enregistre le score de l'évaluation
             self.strategy_scores[self.current_eval] = self.current_score
             self.current_eval += 1
-            
             # Si on a fait les 3 évaluations, on passe à la stratégie suivante
             if self.current_eval >= self.evaluations_per_strategy:
                 # Calcule le score total de la stratégie
@@ -65,12 +64,15 @@ class Robot_player(Robot):
                     self.best_param = self.param.copy()
                     print(f"New best strategy {self.current_strategy} with score {self.best_score:.4f}")
                     print("\tparameters =", self.best_param)  
+                    print("Angle:", self.theta)
                 # Passe à la stratégie suivante ou au mode best strategy
                 self.current_strategy += 1
                 if self.current_strategy >= self.evaluations:
                     print("\n=== Best strategy ===")
-                    print(f"Score: {self.best_score:.4f}")
+                    print(f"BestScore: {self.best_score:.4f}")
+                    print(f"Score: {total_score:.4f}")
                     print("Parameters:", self.best_param)
+                    print("Angle:", self.theta)
                     self.param = self.best_param.copy()
                     # Reset périodique pour le meilleur comportement
                     if self.global_iteration % 1000 == 0:
@@ -92,7 +94,7 @@ class Robot_player(Robot):
         
         # Calcul du mouvement et du score
         translation, rotation = self.compute_movement(sensors)
-        self.current_score += translation * (1 - abs(rotation))
+        self.current_score += abs(translation * (1 - abs(rotation)))
         
         self.strategy_iteration += 1
         self.global_iteration += 1
