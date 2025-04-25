@@ -88,6 +88,9 @@ class Robot_player(Robot):
                 print(f"Gen {self.generation}: nouveau parent score {self.best_score:.4f} --------------------------------------")
                 print("Parameters:", self.best_param)
                 print("Theta:", self.best_theta)
+            
+            with open(f"genetic_run{1}.csv", "a") as f:
+                    f.write(f"{self.generation},{self.current_score},{self.best_score}\n")
             # next generation
             self.generation += 1
             # mutation pour créer l'enfant

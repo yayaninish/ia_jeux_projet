@@ -94,6 +94,10 @@ class Robot_player(Robot):
                     print(f"New best strategy {self.current_strategy} with score {self.best_score:.4f}")
                     print("Parameters:", self.best_param)
                     print("Theta:", self.best_theta)
+
+                with open(f"randomsearch2_run{1}.csv", "a") as f:
+                    f.write(f"{self.current_strategy},{total_score},{self.best_score}\n")
+    
                 # passe à la stratégie suivante
                 self.current_strategy += 1
                 self.current_eval = 0
