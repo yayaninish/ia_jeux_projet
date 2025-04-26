@@ -95,7 +95,7 @@ class Robot_player(Robot):
                     print("Parameters:", self.best_param)
                     print("Theta:", self.best_theta)
 
-                with open(f"randomsearch2_run{1}.csv", "a") as f:
+                with open(f"randomsearch2_run{5}.csv", "a") as f:
                     f.write(f"{self.current_strategy},{total_score},{self.best_score}\n")
     
                 # passe à la stratégie suivante
