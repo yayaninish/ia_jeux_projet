@@ -1,83 +1,118 @@
 # Projet "robotique" IA&Jeux 2025
 #
 # Binome:
-#  Prénom Nom No_étudiant/e : LABIADH Yanis 21202800
-#  Prénom Nom No_étudiant/e : SI MOHAMMED Yaniss
+#  Prénom Nom: LIM Oudam-dara
+#  Prénom Nom: GU David
 #
 # check robot.py for sensor naming convention
 # all sensor and motor value are normalized (from 0.0 to 1.0 for sensors, -1.0 to +1.0 for motors)
 
-from robot import *
+from robot import * 
 import math
-import random
-
-# Best GA parameters obtained précédemment (exemple)
-GA_PARAMS = [-1, -1, -1, -1, -1, 1, -1, 1]
-
 nb_robots = 0
 
 class Robot_player(Robot):
-    team_name = "YY"
 
-    def __init__(self, x_0, y_0, theta_0,
-                 name="n/a", team="A"):
+    team_name = "YYaanniisss"  # vous pouvez modifier le nom de votre équipe
+    robot_id = -1             # ne pas modifier. Permet de connaitre le numéro de votre robot.
+    memory = 0                # vous n'avez le droit qu'a une case mémoire qui doit être obligatoirement un entier
+
+    def __init__(self, x_0, y_0, theta_0, name="n/a", team="n/a"):
         global nb_robots
         self.robot_id = nb_robots
-        nb_robots += 1
-        super().__init__(x_0, y_0, theta_0, name=name, team=team)
-        # Mémoire unique: 0=GA roam, 1=repulse robot, 2=avoid wall
-        self.memory = 0
-        # paramètres de perceptron GA pour le comportement par défaut
-        self.ga_params = GA_PARAMS.copy()
+        nb_robots+=1
+        super().__init__(x_0, y_0, theta_0, name=name, team=self.team_name)
 
     def step(self, sensors, sensor_view=None, sensor_robot=None, sensor_team=None):
-        # --- 1. Priorité haute: répulsion vis-à-vis des robots adverses ---
-        # capteurs détectant un robot ennemi
-        rob_sens = [sensors[i] if sensor_view[i] == 2 and sensor_team[i] != self.team else 0
-                    for i in range(len(sensors))]
-        if max(rob_sens) > 0.0:
-            # activation (1=proche)
-            activation = [1.0 - s for s in rob_sens]
-            # poids braitenberg pour répulsion
-            weights = [0.8, 0.6, 0.2, 0.0, 0.0, -0.2, -0.6, -0.8]
-            rotation = sum(a * w for a, w in zip(activation, weights))
-            # translation: recule si menace frontale
-            front_threat = (activation[sensor_front] +
-                            activation[sensor_front_left] * 0.3 +
-                            activation[sensor_front_right] * 0.3)
-            translation = max(0.0, 1.0 - front_threat)
-            self.memory = 1
+        sensor_to_wall = []
+        sensor_to_robot = []
+        sensor_to_ally = []
+        for i in range (0,8):
+            if  sensor_view[i] == 1:
+                sensor_to_wall.append( sensors[i] )
+                sensor_to_robot.append(1.0)
+                sensor_to_ally.append(1.0)
+            elif  sensor_view[i] == 2:
+                sensor_to_wall.append( 1.0 )
+                if sensor_team[i] != self.team_name:
+                    sensor_to_robot.append( sensors[i] )
+                    sensor_to_ally.append(1.0)
+                else : 
+                    sensor_to_ally.append(sensors[i])
+                    sensor_to_robot.append(1.0)
+            else:
+                sensor_to_wall.append(1.0)
+                sensor_to_robot.append(1.0)
+                sensor_to_ally.append(1.0)
+
+
+        STUCK_THRESHOLD = 15
+        STUCK_THRESHOLD2 = 30
+        WALL_TH = 0.65 
+
+        blocked_front = sensors[sensor_front] < WALL_TH
+        blocked_front_left = sensors[sensor_front_left] < WALL_TH
+        blocked_front_right = sensors[sensor_front_right] < WALL_TH
+        blocked_left = sensors[sensor_left] < WALL_TH
+        blocked_right = sensors[sensor_right] < WALL_TH
+
+        is_followed = sensor_to_robot[sensor_rear] !=1 or sensor_to_robot[sensor_rear_left] != 1 or sensor_to_robot[sensor_rear_right] != 1
+        is_stuck =  (blocked_front and (blocked_left or blocked_front_left)) or ((blocked_front_right or blocked_right) and blocked_front)
+        is_chasing = sensor_to_robot[sensor_front] != 1 or sensor_to_robot[sensor_front_right] != 1 or sensor_to_robot[sensor_front_left] != 1
+        
+
+        if is_stuck and not is_chasing:
+            self.memory += 1
+        else:
+            self.memory = 0 
+
+        #Il est bloqué pendant x temps (défini par STUCK_THRESHOLD)
+        if self.memory > STUCK_THRESHOLD:
+            #print(f"Je suis le robot {self.robot_id} et je suis bloqué")
+            translation = -0.2
+            rotation    = 0.4
+            #Si il est bloqué pendant y temps, il va alors se tourner de manière plus précise
+            if self.memory > STUCK_THRESHOLD2:
+                translation = -0.2
+                rotation    = 0.1
+            
+            return translation, rotation, False
+        
+        #S'il est bloqué
+        if (blocked_front and blocked_front_left) or (blocked_front and blocked_front_right): 
+            translation = sensors[sensor_front]*0.3
+            rotation = 0.6 * sensors[sensor_front_left] - 0.6 * sensors[sensor_front_right] + 0.6* sensors[sensor_left] - 0.6 * sensors[sensor_right] 
+            #print ("\tsensors (distance, max is 1.0)  =",sensors)
+            return translation, rotation, False
+        
+        #Evite le robot allié   
+        if sensor_to_ally[sensor_front_left] != 1 or sensor_to_ally[sensor_front_right] != 1 or sensor_to_ally[sensor_front] != 1 :
+            translation = sensors[sensor_front]*0.7
+            rotation = 1 * sensor_to_ally[sensor_front_left] - 1 * sensor_to_ally[sensor_front_right] + (1-sensor_to_ally[sensor_front])
             return translation, rotation, False
 
-        # --- 2. Moyenne priorité: éviter les murs ---
-        wall_sens = [sensors[i] if sensor_view[i] == 1 else 0
-                     for i in range(len(sensors))]
-        if max(wall_sens) > 0.0:
-            activation_wall = [1.0 - s for s in wall_sens]
-            # poids pour éviter les murs
-            weights_w = [0.0, -0.8, -0.2, -0.1, 0.0, 0.1, 0.2, 0.8]
-            rotation = sum(a * w for a, w in zip(activation_wall, weights_w))
-            # translation: ralentit si obstacle devant
-            front_act = (activation_wall[sensor_front] +
-                         activation_wall[sensor_front_left] +
-                         activation_wall[sensor_front_right]) / 3.0
-            translation = max(0.2, 1.0 - 0.8 * front_act)
-            self.memory = 2
+        #Suis un robot ennemi
+        if is_chasing :
+            translation = sensors[sensor_front]*0.8
+            rotation = 1.0 *sensor_to_robot[sensor_front_right] -1.0 * sensor_to_robot[sensor_front_left]
             return translation, rotation, False
+        
+        #S'il est suivis, attends sur place et se retourne
+        if is_followed :
+            translation = 0.05
+            rotation = 1.0*sensor_to_robot[sensor_rear_right] - 1.0*sensor_to_robot[sensor_rear_left] + (1-sensor_to_robot[sensor_rear])
+            return translation, rotation, False
+        
+        if self.robot_id == 6:
+            param = [-1, -1, -1, -1, 0, -1, 1, 0]
 
-        # --- 3. Comportement par défaut: GA-based roam ---
-        # perceptron sans couche cachée, tanh activation
-        t = math.tanh(
-            self.ga_params[0]
-            + self.ga_params[1] * sensors[sensor_front_left]
-            + self.ga_params[2] * sensors[sensor_front]
-            + self.ga_params[3] * sensors[sensor_front_right]
-        )
-        r = math.tanh(
-            self.ga_params[4]
-            + self.ga_params[5] * sensors[sensor_front_left]
-            + self.ga_params[6] * sensors[sensor_front]
-            + self.ga_params[7] * sensors[sensor_front_right]
-        )
-        self.memory = 0
-        return t, r, False
+            translation = math.tanh ( param[0] + param[1] * sensors[sensor_front_left] + param[2] * sensors[sensor_front] + param[3] * sensors[sensor_front_right] )
+            rotation = math.tanh ( param[4] + param[5] * sensors[sensor_front_left] + param[6] * sensors[sensor_front] + param[7] * sensors[sensor_front_right] )
+            return translation, rotation, False
+        
+        #Par défaut        
+        #print ("\tsensors (distance, max is 1.0)  =",sensors)
+        translation = sensors[sensor_front]*0.8 - (1-sensor_rear)
+        rotation = 0.2 * sensors[sensor_left] + 0.2 * sensors[sensor_front_left] - 0.2 * sensors[sensor_right] - 0.2 * sensors[sensor_front_right] + (random.random()-0.5)*1
+
+        return translation, rotation, False
