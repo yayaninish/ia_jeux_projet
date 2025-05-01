@@ -26,9 +26,12 @@ class Robot_player(Robot):
         wall = [1.0 - s if view==1 else 0.0
                 for s,view in zip(sensors, sensor_view)]
         if max(wall) > 0:
-            weights = [0.0, -0.8, -0.2, -0.1, 0.0, 0.1, 0.2, 0.8]
-            rotation = sum(a*w for a,w in zip(wall, weights))
-            front = (wall[sensor_front_left] + wall[sensor_front] + wall[sensor_front_right]) / 3.0
+            # Poids répulsifs pour s’éloigner des murs
+            w = [ -0.5, -0.8, -0.2, -0.1, 0.0,  0.1,  0.2,  0.8]
+            # Rotation = somme pondérée des activations
+            rotation = sum(wall[i] * w[i] for i in range(8))
+            # Translation = diminue si mur frontal
+            front = (wall[0] + wall[1] + wall[7]) / 3.0
             translation = max(0.2, 1.0 - 0.8 * front)
             return translation, rotation, False
 
