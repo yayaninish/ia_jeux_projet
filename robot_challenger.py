@@ -61,7 +61,7 @@ class Robot_player(Robot):
         is_chasing = sensor_to_robot[sensor_front] != 1 or sensor_to_robot[sensor_front_right] != 1 or sensor_to_robot[sensor_front_left] != 1
         
 
-        if is_stuck and not is_chasing:
+        if is_stuck: # and not is_chasing:
             self.memory += 1
         else:
             self.memory = 0 
