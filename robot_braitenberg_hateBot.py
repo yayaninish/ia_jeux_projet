@@ -26,7 +26,7 @@ class Robot_player(Robot):
         front_act = (activation[sensor_front_left]
                      + activation[sensor_front]
                      + activation[sensor_front_right]) / 3.0
-        translation = max(0.0, 1.0 - front_act)
+        translation = 1.0 - front_act 
 
         if debug and self.iteration % 100 == 0:
             print(f"[HateBot] iter={self.iteration}, trans={translation:.2f}, rot={rotation:.2f}")
